@@ -1,0 +1,2542 @@
+
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChitChat - Messenger</title>
+  <link rel="icon" href="{% static 'favicon.png' %}" type="image/png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #4ce4d0;
+      --primary-dark: #3ab8a8;
+      --bg-light: #f5f6fa;
+      --bg-chat: #f8f9fa;
+      --bg-white: #ffffff;
+      --text-dark: #202124;
+      --text-muted: #5f6368;
+      --input-height: 64px;
+      --google-blue: #1a73e8;
+      --google-grey: #dadce0;
+      --danger: #ea4335;
+      --warning: #fbbc04;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Google Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+    }
+    
+    body {
+      background: var(--bg-light);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: var(--text-dark);
+      overflow: hidden;
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #4ce4d0;
+      padding: 0.5rem 1.5rem;
+      color: var(--text-muted);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      z-index: 40;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .app-header h1 {
+      font-size: 22px;
+      font-weight: 500;
+      margin-left: 15px;
+      color: var(--text-dark);
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: black;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+    }
+
+    .profile-dropdown {
+      position: relative;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .profile-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #4ce4d0, #3ab8a8);
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 50px;
+      background: var(--bg-white);
+      width: 270px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      z-index: 100;
+      overflow: hidden;
+    }
+    
+    .dropdown-menu.show {
+      display: block;
+      margin-top: 20px;
+    }
+    
+    .dropdown-header {
+      padding: 20px 24px;
+      background: #fff;
+      border-bottom: 1px solid #e8eaed;
+    }
+    
+    .dropdown-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #4ce4d0, #3ab8a8);
+      color: white;
+      font-weight: bold;
+      font-size: 32px;
+      margin: 0 auto 15px;
+    }
+    
+    .dropdown-user-info {
+      text-align: center;
+    }
+    
+    .dropdown-user-name {
+      font-weight: 500;
+      font-size: 18px;
+      color: var(--text-dark);
+      margin-bottom: 5px;
+    }
+    
+    .dropdown-user-email {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    
+    .dropdown-menu a {
+      color: var(--text-dark);
+      padding: 12px 24px;
+      text-decoration: none;
+      display: block;
+      transition: background 0.2s;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .dropdown-menu a i {
+      margin-right: 15px;
+      width: 20px;
+      color: var(--text-muted);
+    }
+    
+    .dropdown-menu a:hover {
+      background: #f8f9fa;
+    }
+    
+    .divider {
+      height: 1px;
+      background: #e8eaed;
+      margin: 5px 0;
+    }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .contacts-panel {
+      width: 300px;
+      background: var(--bg-white);
+      border-right: 1px solid #e0e0e0;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.28s ease;
+      overflow-y: auto;
+      z-index: 30;
+    }
+    
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      color: var(--text-dark);
+      padding: 0 5px;
+    }
+    
+    .header-row h2 {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text-dark);
+    }
+    
+    .search-container {
+      position: relative;
+      margin-bottom: 15px;
+    }
+    
+    .search-container input {
+      width: 100%;
+      padding: 12px 15px 12px 40px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      background: #f8f9fa;
+    }
+    
+    .search-container i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+    
+    .contact {
+      display: flex;
+      align-items: center;
+      padding: 12px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .15s;
+      margin-bottom: 5px;
+    }
+    
+    .contact:hover, .contact.active {
+      background: #f1f3f4;
+    }
+    
+    .contact-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      margin-right: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #4ce4d0, #3ab8a8);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+    }
+    
+    .contact-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .contact-name {
+      font-size: 15px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-dark);
+      margin-bottom: 3px;
+    }
+    
+    .contact-last-msg {
+      font-size: 13px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .contact-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 5px;
+      text-align: right;
+      min-width: 50px;
+    }
+    
+    .last-seen {
+      font-size: 10px;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-chat);
+      position: relative;
+      min-width: 0;
+    }
+    
+    .chat-header {
+      padding: 12px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      background: var(--bg-white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    
+    .chat-header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex: 1;
+    }
+    
+    .chat-header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .chat-header-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #4ce4d0, #3ab8a8);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+    }
+    
+    .chat-header-info {
+      flex: 1;
+    }
+    
+    .chat-header-name {
+      font-weight: 500;
+      color: var(--text-dark);
+      font-size: 16px;
+      margin-bottom: 3px;
+    }
+    
+    .chat-header-status {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .chat-box {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+      padding-bottom: calc(var(--input-height) + 16px);
+      background: #f8f9fa;
+    }
+    
+    .message {
+      padding: 12px 16px;
+      border-radius: 18px;
+      max-width: 75%;
+      font-size: 15px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      position: relative;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+      transition: all 0.2s ease;
+    }
+    
+    .message:hover {
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    
+    .message .sender-label {
+      display: block;
+      font-size: 13px;
+      color: var(--google-blue);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    
+    .message .body {
+      white-space: pre-wrap;
+    }
+    
+    .message small.time {
+      display: block;
+      font-size: 11px;
+      margin-top: 6px;
+      text-align: right;
+      color: var(--text-muted);
+    }
+
+    .sent {
+      align-self: flex-end;
+      background-color: #d2f3ee;
+      border-bottom-right-radius: 6px;
+    }
+    
+    .received {
+      align-self: flex-start;
+      background-color: var(--bg-white);
+      border-bottom-left-radius: 6px;
+    }
+
+    .date-divider {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+      position: relative;
+    }
+    
+    .date-divider::before,
+    .date-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 30%;
+      height: 1px;
+      background: #e0e0e0;
+    }
+    
+    .date-divider::before {
+      left: 0;
+    }
+    
+    .date-divider::after {
+      right: 0;
+    }
+
+    .chat-input {
+      height: var(--input-height);
+      padding: 10px 16px;
+      background: var(--bg-white);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      z-index: 50;
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 300px;
+      width: calc(100% - 300px);
+      transition: left .2s, width .2s;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .chat-input .input-container {
+      flex: 1;
+      position: relative;
+    }
+    
+    .chat-input input {
+      width: 100%;
+      padding: 14px 50px 14px 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 24px;
+      font-size: 15px;
+      outline: none;
+      background: #f8f9fa;
+    }
+    
+    .chat-input .input-actions {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      gap: 15px;
+      color: var(--text-muted);
+    }
+    
+    .chat-input .input-actions i {
+      cursor: pointer;
+      font-size: 18px;
+    }
+    
+    .chat-input button {
+      padding: 12px 24px;
+      background: var(--google-blue);
+      border: none;
+      border-radius: 20px;
+      color: white;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .chat-input button:hover {
+      background: #1765cc;
+    }
+
+    /* Message actions */
+    .message-actions {
+      position: absolute;
+      top: -25px;
+      right: 10px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      display: none;
+      z-index: 20;
+    }
+    
+    .message:hover .message-actions {
+      display: flex;
+    }
+    
+    .message-action-btn {
+      padding: 6px 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+    
+    .message-action-btn:hover {
+      color: var(--google-blue);
+    }
+    
+    .message-action-btn.delete:hover {
+      color: var(--danger);
+    }
+    
+    .message-action-btn.edit:hover {
+      color: var(--warning);
+    }
+
+    /* Clear chat button */
+    .clear-chat-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .clear-chat-btn:hover {
+      background: #f8f9fa;
+      color: var(--danger);
+    }
+
+    /* Edit message modal */
+    .edit-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .edit-modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    
+    .edit-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .edit-modal-title {
+      font-weight: 500;
+      color: var(--text-dark);
+    }
+    
+    .edit-modal-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+    
+    .edit-modal-body textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      resize: vertical;
+      min-height: 100px;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    
+    .edit-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    
+    .edit-modal-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .edit-modal-btn.cancel {
+      background: #f8f9fa;
+      color: var(--text-dark);
+    }
+    
+    .edit-modal-btn.save {
+      background: var(--google-blue);
+      color: white;
+    }
+
+    /* Loading spinner */
+    .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        color: var(--text-muted);
+    }
+
+    /* Error message */
+    .error-message {
+        color: #dc3545;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .error-message button {
+        background: var(--google-blue);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        margin-top: 10px;
+        cursor: pointer;
+    }
+
+    /* No messages placeholder */
+    .no-messages {
+        text-align: center;
+        color: var(--text-muted);
+        padding: 40px 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .contacts-panel {
+        position: absolute;
+        height: 100%;
+        z-index: 80;
+        background: white;
+        top: 0;
+        left: 0;
+        transform: translateX(-100%);
+      }
+      
+      .contacts-panel.active { transform: translateX(0); }
+      .chat-input { left: 0; width: 100%; }
+      
+      .app-header h1 {
+        font-size: 18px;
+      }
+      
+      .chat-header {
+        padding: 10px 15px;
+      }
+      
+      .message-actions {
+        top: -20px;
+        right: 5px;
+      }
+      
+      .message-action-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+    }
+
+    
+    .welcome-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .welcome-illustration {
+      width: 200px;
+      height: 200px;
+      background: #e8f0fe;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    
+    .welcome-illustration i {
+      font-size: 80px;
+      color: var(--google-blue);
+    }
+    
+    .welcome-title {
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--text-dark);
+      margin-bottom: 15px;
+    }
+    
+    .welcome-subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 500px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+    
+    .avatar-initials {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-weight: bold;
+      color: white;
+      text-transform: uppercase;
+    }
+    
+    
+    .dropdown-avatar img,
+    .contact-avatar img,
+    .chat-header-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 3px solid var(--primary);   
+      box-shadow: var(--shadow);       
+      border-radius: 50%; 
+    }
+
+    .profile-avatar img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 3px solid var(--white);   
+      box-shadow: var(--shadow);       
+      border-radius: 50%; 
+    }
+    
+    .online-indicator {
+      width: 10px;
+      height: 10px;
+      background: #34a853;
+      border-radius: 50%;
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      border: 2px solid white;
+    }
+    
+    .contact-avatar, .chat-header-avatar {
+      position: relative;
+    }
+    
+    .sidebar-toggle {
+      display: inline-block;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+      margin-right: 15px;
+    }
+    
+    .spinner {
+      border: 3px solid rgba(0, 0, 0, 0.1);
+      border-top: 3px solid var(--google-blue);
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+        /* Confirmation Modals */
+    .confirmation-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .confirmation-modal-content {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .confirmation-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e8eaed;
+    }
+
+    .confirmation-modal-title {
+      font-weight: 500;
+      color: var(--text-dark);
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .confirmation-modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .confirmation-modal-body {
+      margin-bottom: 24px;
+    }
+
+    .confirmation-modal-body p {
+      margin: 0 0 12px 0;
+      color: var(--text-dark);
+      line-height: 1.5;
+    }
+
+    .warning-text {
+      color: var(--danger) !important;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .confirmation-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .confirmation-modal-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .confirmation-modal-btn.cancel {
+      background: #f8f9fa;
+      color: var(--text-dark);
+    }
+
+    .confirmation-modal-btn.cancel:hover {
+      background: #e8eaed;
+    }
+
+    .confirmation-modal-btn.confirm {
+      background: var(--danger);
+      color: white;
+    }
+
+    .confirmation-modal-btn.confirm:hover {
+      background: #d32f2f;
+    }
+
+    .confirmation-modal-btn.confirm:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+        /* Message status indicators */
+    .message-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 4px;
+    }
+
+    .message-status {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-left: 8px;
+        display: flex;
+        gap: 1px;
+    }
+
+    .message.sent .message-status {
+        color: var(--google-blue);
+    }
+
+    /* Single tick (sent) */
+    .message-status .tick {
+        display: inline-block;
+    }
+
+    /* Double tick (read) */
+    .message-status.read .tick:nth-child(2) {
+        display: inline-block;
+    }
+
+    /* Hide second tick by default */
+    .message-status:not(.read) .tick:nth-child(2) {
+        display: none;
+    }
+
+  </style>
+</head>
+
+<body>
+<div class="app-header">
+  <div class="logo-container">
+    <span class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></span>
+    <a href="{% url 'index' %}" class="logo">
+        ChitChat
+      </a>
+  </div>
+
+  <div class="profile-dropdown" id="profileDropdownTrigger">
+      <div class="profile-avatar">
+        {% if user.avatar_base64 %}
+          <img src="data:image/png;base64,{{ user.avatar_base64 }}" alt="{{ user.full_name|default:'User' }}">
+        {% else %}
+          <div class="avatar-initials" aria-label="{{ user.full_name|default:'User' }}">
+            {% if user.full_name %}
+              {% with name_parts=user.full_name.split %}
+                {{ name_parts.0.0|upper }}{% if name_parts.1 %}{{ name_parts.1.0|upper }}{% endif %}
+              {% endwith %}
+            {% else %}
+              {{ user.email.0|upper|default:"U" }}
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="dropdown-menu" id="profileDropdown">
+        <div class="dropdown-header">
+          <div class="dropdown-avatar">
+            {% if user.avatar_base64 %}
+              <img src="data:image/png;base64,{{ user.avatar_base64 }}" alt="{{ user.full_name|default:'User' }}">
+            {% else %}
+              <div class="avatar-initials" aria-label="{{ user.full_name|default:'User' }}">
+                {% if user.full_name %}
+                  {% with name_parts=user.full_name.split %}
+                    {{ name_parts.0.0|upper }}{% if name_parts.1 %}{{ name_parts.1.0|upper }}{% endif %}
+                  {% endwith %}
+                {% else %}
+                  {{ user.email.0|upper|default:"U" }}
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="dropdown-user-info">
+            <div class="dropdown-user-name">{{ user.full_name|default:"User" }}</div>
+            <div class="dropdown-user-email">{{ user.email|default:"No email" }}</div>
+          </div>
+        </div>
+        
+        <a href="{% url 'profile' %}"><i class="fas fa-user"></i> View Profile</a>
+        <a href="#"><i class="fas fa-cog"></i> Settings</a>
+        <a href="#"><i class="fas fa-moon"></i> Theme</a>
+        
+        <div class="divider"></div>      
+
+        <a href="{% url 'logout' %}" style="color: #ea4335;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      </div>
+      
+  </div>
+
+</div>
+
+<div class="main-container">
+  <div class="contacts-panel active" id="sidebar">
+    <div class="header-row">
+      <h2>Contacts</h2>
+      <span style="cursor: pointer;" onclick="toggleSidebar()"><i class="fas fa-times"></i></span>
+    </div>
+    
+    <div class="search-container">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Search contacts..." id="contactSearch">
+    </div>
+    
+    <ul class="contact-list" id="contactList">
+      {% for contact in contacts %}
+      <li class="contact" 
+          data-contact-id="{{ contact.id }}"
+          data-contact-name="{{ contact.full_name|default:'Contact' }}"
+          onclick="selectContact(event)">
+        <div class="contact-avatar">
+          {% if contact.avatar_base64 %}
+          
+          <img src="data:image/png;base64,{{ contact.avatar_base64 }}" 
+              alt="{% with name_parts=contact.full_name.split %}
+                    {{ name_parts.0.0|upper }}{% if name_parts.1 %}{{ name_parts.1.0|upper }}{% endif %}
+                  {% endwith %}">
+
+            {% else %}
+            <div class="avatar-initials" aria-label="{{ contact.full_name|default:'Contact' }}">
+              {% if contact.full_name %}
+                {% with name_parts=contact.full_name.split %}
+                  {{ name_parts.0.0|upper }}{% if name_parts.1 %}{{ name_parts.1.0|upper }}{% endif %}
+                {% endwith %}
+              {% else %}
+                {{ contact.email.0|upper|default:"C" }}
+              {% endif %}
+            </div>
+          {% endif %}
+          {% if contact.is_online %}
+            <div class="online-indicator"></div>
+          {% endif %}
+        </div>
+        <div class="contact-info">
+          <div class="contact-name">{{ contact.full_name|default:"Contact" }}</div>
+          <div class="contact-last-msg">
+            {% if contact.last_message %}
+              {% if contact.last_message.sender_id == user_id %}
+                You: {{ contact.last_message.content|truncatechars:20 }}
+              {% else %}
+                {{ contact.last_message.content|truncatechars:20 }}
+              {% endif %}
+            {% else %}
+              No messages yet
+            {% endif %}
+          </div>
+        </div>
+        <div class="contact-time">
+          {% if contact.last_message %}
+            {{ contact.last_message.timestamp|date:"H:i" }}
+            {% if not contact.is_online %}
+              <span class="last-seen">last seen {{ contact.last_seen|date:"M d" }}</span>
+            {% endif %}
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header" id="chatHeader">
+      <div class="chat-header-left">
+        <div class="chat-header-avatar" id="chatAvatar">
+          <div class="avatar-initials" aria-label="Welcome">CH</div>
+        </div>
+        <div class="chat-header-info">
+          <div class="chat-header-name" id="chatName">Welcome to ChitChat!</div>
+          <div class="chat-header-status" id="chatStatus">Select a contact to start chatting</div>
+        </div>
+      </div>
+      
+      <div class="chat-header-right">
+        <button class="clear-chat-btn" id="clearChatBtn" onclick="openClearChatModal()" style="display: none;">
+          <i class="fas fa-trash-alt"></i> Clear Chat
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+      <div class="welcome-container">
+        <div class="welcome-illustration">
+          <i class="fas fa-comments"></i>
+        </div>
+        <div class="welcome-title">Welcome to ChitChat!</div>
+        <div class="welcome-subtitle">Select a contact from your list to start a conversation or search for someone new.</div>
+      </div>
+    </div>
+
+    <div class="chat-input" id="chatInputBar">
+      <div class="input-container">
+        <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+        <div class="input-actions">
+          <i class="fas fa-paperclip"></i>
+          <i class="far fa-smile"></i>
+        </div>
+      </div>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Message Modal -->
+<div class="edit-modal" id="editModal">
+  <div class="edit-modal-content">
+    <div class="edit-modal-header">
+      <h3 class="edit-modal-title">Edit Message</h3>
+      <button class="edit-modal-close" onclick="closeEditModal()">&times;</button>
+    </div>
+    <div class="edit-modal-body">
+      <textarea id="editMessageText" placeholder="Edit your message..."></textarea>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="edit-modal-btn cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="edit-modal-btn save" onclick="saveEditedMessage()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Message Modal -->
+<div class="confirmation-modal" id="deleteMessageModal">
+  <div class="confirmation-modal-content">
+    <div class="confirmation-modal-header">
+      <h3 class="confirmation-modal-title">Delete Message</h3>
+      <button class="confirmation-modal-close" onclick="closeDeleteMessageModal()">&times;</button>
+    </div>
+    <div class="confirmation-modal-body">
+      <p>Are you sure you want to delete this message?</p>
+    </div>
+    <div class="confirmation-modal-footer">
+      <button class="confirmation-modal-btn cancel" onclick="closeDeleteMessageModal()">Cancel</button>
+      <button class="confirmation-modal-btn confirm" onclick="confirmDeleteMessage()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clear Chat Modal -->
+<div class="confirmation-modal" id="clearChatModal">
+  <div class="confirmation-modal-content">
+    <div class="confirmation-modal-header">
+      <h3 class="confirmation-modal-title">Clear Chat</h3>
+      <button class="confirmation-modal-close" onclick="closeClearChatModal()">&times;</button>
+    </div>
+    <div class="confirmation-modal-body">
+      <p>Are you sure you want to permanently delete ALL messages in this chat?</p>
+      <p class="warning-text">This action cannot be undone and will delete messages for both sides.</p>
+    </div>
+    <div class="confirmation-modal-footer">
+      <button class="confirmation-modal-btn cancel" onclick="closeClearChatModal()">Cancel</button>
+      <button class="confirmation-modal-btn confirm" onclick="confirmClearChat()">Clear Chat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ====================================================
+// Full chat JS — includes all 48 named functions
+// Behaviour: only Sent (✓) and Read (✓✓)
+// ====================================================
+
+// Global variables
+let currentFriend = null;
+let chatSocket = null;
+let typingTimer = null;
+const userId = "{{ user_id }}";
+const userEmail = "{{ user_email }}";
+const userAvatar = "{{ user_avatar_base64 }}";
+const userName = "{{ user_full_name }}";
+let currentEditingMessageId = null;
+
+// Enhanced message tracking
+const pendingMessageOperations = new Map();
+const tempToRealIdMap = new Map();
+
+// DOM Elements
+const chatPanel = document.getElementById("chatPanel");
+const contactsPanel = document.getElementById("sidebar");
+const chatBox = document.getElementById("chatBox");
+const messageInput = document.getElementById("messageInput");
+const contactList = document.getElementById("contactList");
+const chatHeader = document.getElementById("chatHeader");
+const chatName = document.getElementById("chatName");
+const chatStatus = document.getElementById("chatStatus");
+const chatAvatar = document.getElementById("chatAvatar");
+const clearChatBtn = document.getElementById("clearChatBtn");
+const editModal = document.getElementById("editModal");
+const editMessageText = document.getElementById("editMessageText");
+
+// Read receipt variables
+let readReceiptLastSentTime = 0;
+const READ_RECEIPT_COOLDOWN = 300; // 3 seconds cooldown
+let readReceiptCheckTimeout = null;
+let readReceiptScrollHandler = null;
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+    loadContacts();
+    initializeProfileDropdown();
+    initializeContactSearch();
+    
+    // Mobile behavior
+    if (window.innerWidth <= 768) {
+        document.addEventListener('click', function(e) {
+            if (!chatPanel.contains(e.target) && !contactsPanel.contains(e.target)) {
+                chatPanel.classList.add('hidden');
+                contactsPanel.classList.add('active');
+            }
+        });
+    }
+});
+
+// ----------------------------------------------------
+// 1) initializeContactSearch
+// ----------------------------------------------------
+function initializeContactSearch() {
+    const contactSearch = document.getElementById('contactSearch');
+    if (!contactSearch) return;
+    
+    contactSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const contacts = document.querySelectorAll('.contact');
+        
+        contacts.forEach(contact => {
+            const contactName = (contact.dataset.contactName || '').toLowerCase();
+            if (contactName.includes(searchTerm)) {
+                contact.style.display = 'flex';
+            } else {
+                contact.style.display = 'none';
+            }
+        });
+    });
+}
+
+// ----------------------------------------------------
+// 2) initializeProfileDropdown
+// ----------------------------------------------------
+function initializeProfileDropdown() {
+    const profileDropdownTrigger = document.getElementById('profileDropdownTrigger');
+    const profileDropdown = document.getElementById('profileDropdown');
+    
+    if (!profileDropdownTrigger || !profileDropdown) return;
+    
+    // Update profile avatar in header
+    const headerAvatar = profileDropdownTrigger.querySelector('.profile-avatar');
+    if (headerAvatar) {
+        headerAvatar.innerHTML = userAvatar 
+            ? `<img src="data:image/png;base64,${userAvatar}" alt="${userName || 'User'}">`
+            : `<div class="avatar-initials">${getInitialsFromName(userName || userEmail)}</div>`;
+    }
+    
+    // Update dropdown content
+    const dropdownAvatar = profileDropdown.querySelector('.dropdown-avatar');
+    const dropdownName = profileDropdown.querySelector('.dropdown-user-name');
+    const dropdownEmail = profileDropdown.querySelector('.dropdown-user-email');
+    
+    if (dropdownAvatar) {
+        dropdownAvatar.innerHTML = userAvatar
+            ? `<img src="data:image/png;base64,${userAvatar}" alt="${userName || 'User'}">`
+            : `<div class="avatar-initials">${getInitialsFromName(userName || userEmail)}</div>`;
+    }
+    
+    if (dropdownName) dropdownName.textContent = userName || 'User';
+    if (dropdownEmail) dropdownEmail.textContent = userEmail || 'No email';
+    
+    // Dropdown toggle
+    profileDropdownTrigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        profileDropdown.classList.toggle('show');
+    });
+    
+    document.addEventListener('click', function(e) {
+        if (!profileDropdown.contains(e.target) && !profileDropdownTrigger.contains(e.target)) {
+            profileDropdown.classList.remove('show');
+        }
+    });
+}
+
+// ----------------------------------------------------
+// 3) toggleSidebar
+// ----------------------------------------------------
+function toggleSidebar() {
+    if (window.innerWidth <= 768) {
+        contactsPanel.classList.toggle('active');
+        chatPanel.classList.toggle('hidden');
+    }
+}
+
+// ----------------------------------------------------
+// 4) loadContacts
+// ----------------------------------------------------
+async function loadContacts() {
+    try {
+        const response = await fetch('/get_contacts/');
+        if (!response.ok) throw new Error('Failed to load contacts');
+        
+        const data = await response.json();
+        renderContacts(data.contacts);
+    } catch (error) {
+        console.error('Error loading contacts:', error);
+        showError('Failed to load contacts');
+    }
+}
+
+// ----------------------------------------------------
+// 5) renderContacts
+// ----------------------------------------------------
+function renderContacts(contacts) {
+    contactList.innerHTML = '';
+    
+    contacts.forEach(contact => {
+        const contactEl = document.createElement('li');
+        contactEl.className = 'contact';
+        contactEl.dataset.contactId = contact.id;
+        contactEl.dataset.contactName = contact.full_name;
+        
+        const lastMsg = contact.last_message;
+        const isSent = lastMsg && lastMsg.sender_id === userId;
+        const timeStr = lastMsg ? formatTime(lastMsg.timestamp) : '';
+        
+        contactEl.innerHTML = `
+            <div class="contact-avatar">
+                ${contact.avatar_base64 ? 
+                    `<img src="data:image/png;base64,${contact.avatar_base64}" alt="${contact.full_name}">` : 
+                    `<div class="avatar-initials">${getInitialsFromName(contact.full_name)}</div>`}
+                ${contact.status === 'online' ? '<div class="online-indicator"></div>' : ''}
+            </div>
+            <div class="contact-info">
+                <div class="contact-name">${contact.full_name}</div>
+                <div class="contact-last-msg">
+                    ${lastMsg ? (isSent ? 'You: ' : '') + truncateMessage(lastMsg.content, 20) : 'No messages yet'}
+                </div>
+            </div>
+            <div class="contact-time">
+                ${timeStr}
+                ${contact.status !== 'online' ? 
+                    `<span class="last-seen">last seen ${formatLastSeen(contact.last_seen)}</span>` : ''}
+            </div>
+        `;
+        
+        contactEl.addEventListener('click', () => selectContact(contact, contactEl));
+        contactList.appendChild(contactEl);
+    });
+}
+
+// ----------------------------------------------------
+// 6) selectContact
+// ----------------------------------------------------
+function selectContact(contact, contactEl) {
+    // Clean up previous read receipt listeners
+    cleanupReadReceipts();
+    
+    // Update current friend
+    currentFriend = {
+        id: contact.id,
+        name: contact.full_name,
+        avatar: contact.avatar_base64,
+        isOnline: contact.status === 'online',
+        lastSeen: contact.last_seen
+    };
+    
+    // Update chat header
+    chatName.textContent = currentFriend.name;
+    chatStatus.textContent = currentFriend.isOnline ? 'Online' : `Last seen ${formatLastSeen(currentFriend.lastSeen)}`;
+    
+    // Update avatar
+    chatAvatar.innerHTML = currentFriend.avatar ? 
+        `<img src="data:image/png;base64,${currentFriend.avatar}" alt="${currentFriend.name}">` :
+        `<div class="avatar-initials">${getInitialsFromName(currentFriend.name)}</div>`;
+    
+    // Show clear chat button
+    if (clearChatBtn) clearChatBtn.style.display = 'block';
+    
+    // Mark as active in contact list
+    document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
+    if (contactEl) contactEl.classList.add('active');
+    
+    // Close sidebar on mobile
+    if (window.innerWidth <= 768) {
+        contactsPanel.classList.remove('active');
+        chatPanel.classList.remove('hidden');
+    }
+    
+    // Connect WebSocket and load messages
+    connectWebSocket();
+    loadMessages();
+    
+    // Setup read receipts after messages are loaded
+    setTimeout(setupReadReceipts, 500);
+}
+
+// ----------------------------------------------------
+// 7) connectWebSocket
+// ----------------------------------------------------
+function connectWebSocket() {
+    if (!currentFriend) return;
+    
+    // Close existing connection if any
+    if (chatSocket) {
+        try {
+            chatSocket.close();
+        } catch (e) {
+            console.log('Error closing existing WebSocket:', e);
+        }
+    }
+    
+    const roomName = [userId, currentFriend.id].sort().join('_');
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    
+    try {
+        chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${roomName}/`);
+        
+        chatSocket.onopen = () => {
+            console.log('WebSocket connected successfully');
+        };
+        
+        chatSocket.onmessage = (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                
+                switch (data.type) {
+                    case 'chat_message':
+                        handleChatMessage(data);
+                        break;
+                    case 'message_edited':
+                        handleMessageEdited(data);
+                        break;
+                    case 'message_deleted':
+                        handleMessageDeleted(data);
+                        break;
+                    case 'chat_cleared':
+                        handleChatCleared(data);
+                        break;
+                    case 'typing_indicator':
+                        handleTypingIndicator(data);
+                        break;
+                    case 'read_receipt':
+                        handleReadReceipt(data);
+                        break;
+                    default:
+                        console.log('Unknown WebSocket message type:', data.type);
+                }
+            } catch (error) {
+                console.error('Error processing WebSocket message:', error);
+            }
+        };
+        
+        chatSocket.onclose = (e) => {
+            console.log('WebSocket disconnected:', e.code, e.reason);
+            cleanupReadReceipts();
+        };
+        
+        chatSocket.onerror = (err) => {
+            console.error('WebSocket error:', err);
+        };
+        
+    } catch (error) {
+        console.error('Error creating WebSocket:', error);
+    }
+}
+
+// ----------------------------------------------------
+// 8) handleChatMessage
+// ----------------------------------------------------
+function handleChatMessage(data) {
+    // Only process messages that aren't from ourselves
+    if (data.sender_id !== userId) {
+        const timeStr = formatTime(data.timestamp);
+        addMessageToChat(data.message, false, timeStr, data.sender_id, data.message_id, false, false, data.read || false);
+        updateContactLastMessage(data.sender_id, data.message, false, data.timestamp);
+        playNotificationSound();
+    } else if (data.temp_id) {
+        // This is our own message with a temp ID, update it with the real ID
+        tempToRealIdMap.set(data.temp_id, data.message_id);
+        
+        // Process any pending operations for this message
+        processPendingOperations(data.temp_id, data.message_id);
+        
+        // Update UI with real ID
+        updateTempMessageId(data.temp_id, data.message_id);
+        
+        // Update status if available
+        if (data.read !== undefined) {
+            updateMessageStatus(data.message_id, data.read);
+        }
+    }
+}
+
+// ----------------------------------------------------
+// 9) handleMessageEdited
+// ----------------------------------------------------
+function handleMessageEdited(data) {
+    // Only process if the editor is not ourselves (we already updated our UI)
+    if (data.editor_id !== userId) {
+        updateMessageInUI(data.message_id, data.new_content, data.timestamp);
+    }
+}
+
+// ----------------------------------------------------
+// 10) handleMessageDeleted
+// ----------------------------------------------------
+function handleMessageDeleted(data) {
+    // Only process if the deleter is not ourselves (we already updated our UI)
+    if (data.deleter_id !== userId) {
+        deleteMessageFromUI(data.message_id);
+    }
+}
+
+// ----------------------------------------------------
+// 11) handleChatCleared
+// ----------------------------------------------------
+function handleChatCleared(data) {
+    // Only process if the clearer is not ourselves (we already updated our UI)
+    if (data.cleared_by !== userId) {
+        // Reload messages to reflect changes
+        loadMessages();
+    }
+}
+
+// ----------------------------------------------------
+// 12) handleTypingIndicator
+// ----------------------------------------------------
+function handleTypingIndicator(data) {
+    if (data.sender_id === currentFriend.id) {
+        chatStatus.textContent = data.is_typing ? 'typing...' : (currentFriend.isOnline ? 'Online' : `Last seen ${formatLastSeen(currentFriend.lastSeen)}`);
+    }
+}
+
+// ----------------------------------------------------
+// 13) handleReadReceipt
+// ----------------------------------------------------
+function handleReadReceipt(data) {
+    // Update read status for messages in real-time for BOTH users
+    if (data.message_ids && Array.isArray(data.message_ids)) {
+        data.message_ids.forEach(messageId => {
+            updateMessageStatus(messageId, true);
+        });
+    }
+}
+
+// ----------------------------------------------------
+// 14) processPendingOperations
+// ----------------------------------------------------
+function processPendingOperations(tempId, realId) {
+    const operation = pendingMessageOperations.get(tempId);
+    if (operation) {
+        switch (operation.type) {
+            case 'edit':
+                // Retry the edit with real ID
+                safeWebSocketSend({
+                    type: "edit_message",
+                    message_id: realId,
+                    new_content: operation.new_content
+                });
+                break;
+            case 'delete':
+                // Retry the delete with real ID
+                safeWebSocketSend({
+                    type: "delete_message",
+                    message_id: realId
+                });
+                break;
+            case 'send':
+                // send operation persisted as queued 'send' — nothing to do
+                break;
+        }
+        pendingMessageOperations.delete(tempId);
+    }
+}
+
+// ----------------------------------------------------
+// 15) updateTempMessageId
+// ----------------------------------------------------
+function updateTempMessageId(tempId, realId) {
+    const messageElement = document.querySelector(`[data-message-id="${tempId}"]`);
+    if (messageElement) {
+        // Update the data attribute
+        messageElement.dataset.messageId = realId;
+        
+        // Keep mapping
+        tempToRealIdMap.set(tempId, realId);
+        
+        // Check current read status
+        const statusElement = messageElement.querySelector('.message-status');
+        const isRead = statusElement && statusElement.classList.contains('read');
+        
+        // Add action buttons for sent messages
+        if (messageElement.classList.contains('sent')) {
+            const existingActions = messageElement.querySelector('.message-actions');
+            if (!existingActions) {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'message-actions';
+                actionsDiv.innerHTML = `
+                    <button class="message-action-btn edit" onclick="editMessage('${realId}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="message-action-btn delete" onclick="openDeleteMessageModal('${realId}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                messageElement.appendChild(actionsDiv);
+            }
+        }
+        
+        // Ensure correct status is maintained
+        if (statusElement) {
+            if (isRead) {
+                statusElement.classList.add('read');
+            } else {
+                statusElement.classList.remove('read');
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------
+// 16) updateMessageStatus
+// ----------------------------------------------------
+function updateMessageStatus(messageId, isRead) {
+    // Accept either temp or real IDs — attempt mapping
+    if (messageId.startsWith && messageId.startsWith('temp_')) {
+        // If we have a real ID mapping, prefer that for sender-side status
+        if (tempToRealIdMap.has(messageId)) {
+            messageId = tempToRealIdMap.get(messageId);
+        }
+    }
+
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageElement) return;
+    
+    const statusElement = messageElement.querySelector('.message-status');
+    if (statusElement) {
+        // Sent messages only show single or double ticks
+        if (isRead) {
+            statusElement.classList.remove('sent');
+            statusElement.classList.add('read');
+            statusElement.innerHTML = '<span class="tick">✓</span><span class="tick">✓</span>';
+        } else {
+            statusElement.classList.remove('read');
+            statusElement.classList.add('sent');
+            statusElement.innerHTML = '<span class="tick">✓</span>';
+        }
+    } else {
+        // If there's no status element (maybe message was created before), create one for sent messages
+        if (messageElement.classList.contains('sent')) {
+            const footer = messageElement.querySelector('.message-footer') || messageElement;
+            const newStatus = document.createElement('div');
+            newStatus.className = 'message-status ' + (isRead ? 'read' : 'sent');
+            newStatus.innerHTML = isRead ? '<span class="tick">✓</span><span class="tick">✓</span>' : '<span class="tick">✓</span>';
+            footer.appendChild(newStatus);
+        }
+    }
+
+    // Mark dataset so we don't send duplicate receipts
+    messageElement.dataset.read = isRead ? 'true' : 'false';
+}
+
+// ----------------------------------------------------
+// 17) safeWebSocketSend
+// ----------------------------------------------------
+function safeWebSocketSend(data) {
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+        console.log('WebSocket not ready, cannot send message');
+        return false;
+    }
+    
+    try {
+        chatSocket.send(JSON.stringify(data));
+        return true;
+    } catch (error) {
+        console.error('Error sending WebSocket message:', error);
+        return false;
+    }
+}
+
+// ----------------------------------------------------
+// 18) sendMessage
+// ----------------------------------------------------
+function sendMessage() {
+    const message = messageInput.value.trim();
+    if (!message || !currentFriend) return;
+
+    // Add message to UI immediately (optimistic update)
+    const timestamp = new Date();
+    const timeStr = formatTime(timestamp);
+    const tempMessageId = 'temp_' + Date.now();
+    
+    // Store the message data for later processing
+    pendingMessageOperations.set(tempMessageId, {
+        type: 'send',
+        message: message,
+        timestamp: timestamp,
+        receiver_id: currentFriend.id
+    });
+    
+    // Show single tick (sent) initially - explicitly set isRead to false
+    addMessageToChat(message, true, timeStr, userId, tempMessageId, false, false, false);
+    updateContactLastMessage(currentFriend.id, message, true, timestamp);
+    
+    // Then send to server via WebSocket (or fallback to HTTP)
+    const success = safeWebSocketSend({ 
+        type: "chat_message",
+        message: message,
+        receiver_id: currentFriend.id,
+        timestamp: timestamp.toISOString(),
+        temp_id: tempMessageId,
+        read: false  // Explicitly set read status
+    });
+
+    if (!success) {
+        // fallback: try HTTP
+        sendMessageViaHTTP(message, currentFriend.id, timestamp, tempMessageId);
+    }
+    
+    // Clear input and force scroll
+    messageInput.value = "";
+    setTimeout(() => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }, 50);
+}
+
+// ----------------------------------------------------
+// 19) sendMessageViaHTTP
+// ----------------------------------------------------
+async function sendMessageViaHTTP(message, receiver_id, timestamp, tempMessageId) {
+    try {
+        const response = await fetch('/chat/send_message/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
+            },
+            body: JSON.stringify({
+                message: message,
+                receiver_id: receiver_id,
+                timestamp: timestamp.toISOString(),
+                temp_id: tempMessageId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('HTTP send failed');
+        }
+        
+        const data = await response.json();
+        // Update temp ID with real ID
+        if (data.message_id && tempMessageId) {
+            updateTempMessageId(tempMessageId, data.message_id);
+        }
+        
+    } catch (error) {
+        console.error('Error sending message via HTTP:', error);
+        showError('Failed to send message. Please try again.');
+    }
+}
+
+// ----------------------------------------------------
+// 20) markMessagesAsRead
+// ----------------------------------------------------
+async function markMessagesAsRead(messageIds) {
+    if (!messageIds.length || !currentFriend) return;
+    
+    try {
+        const response = await fetch('/chat/mark_as_read/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
+            },
+            body: JSON.stringify({
+                message_ids: messageIds,
+                receiver_id: currentFriend.id
+            })
+        });
+        
+        if (response.ok) {
+            // Update UI locally
+            messageIds.forEach(messageId => {
+                updateMessageStatus(messageId, true);
+            });
+        }
+    } catch (error) {
+        console.error('Error marking messages as read:', error);
+    }
+}
+
+// ----------------------------------------------------
+// 21) setupReadReceipts
+// ----------------------------------------------------
+function setupReadReceipts() {
+    // Clear any existing timeout and event listener
+    cleanupReadReceipts();
+    
+    let lastScrollTime = 0;
+    const SCROLL_THROTTLE = 1000; // Throttle scroll events to 1 second
+    
+    // Helper: check if element is visible within chatBox viewport
+    function isElementVisibleInChat(el) {
+        if (!el) return false;
+        const containerRect = chatBox.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        // Consider element visible if its midpoint is within container viewport
+        const elMid = elRect.top + (elRect.height / 2);
+        return elMid >= containerRect.top && elMid <= containerRect.bottom;
+    }
+    
+    // Check for unread messages with cooldown protection
+    function checkUnreadMessages() {
+        // Don't check if we're in cooldown period
+        const now = Date.now();
+        if (now - readReceiptLastSentTime < READ_RECEIPT_COOLDOWN) {
+            return;
+        }
+        
+        if (!currentFriend) return;
+        
+        const receivedMessages = document.querySelectorAll('.message.received');
+        const unreadToSend = [];
+        
+        receivedMessages.forEach(message => {
+            const messageId = message.dataset.messageId;
+            const alreadyMarked = message.dataset.read === 'true';
+            
+            // If not marked read and visible in viewport, mark it for read receipt
+            if (messageId && !alreadyMarked && isElementVisibleInChat(message)) {
+                unreadToSend.push(messageId);
+                message.dataset.read = 'true'; // prevent double-sending
+            }
+        });
+        
+        if (unreadToSend.length > 0) {
+            // Send read receipt via WebSocket
+            safeWebSocketSend({
+                type: "read_receipt",
+                message_ids: unreadToSend,
+                reader_id: userId
+            });
+            
+            // HTTP fallback (best-effort)
+            fetch('/chat/mark_as_read/', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()
+                },
+                body: JSON.stringify({ message_ids: unreadToSend })
+            }).catch(err => console.error("HTTP read receipt failed:", err));
+            
+            readReceiptLastSentTime = now;
+        }
+    }
+    
+    // Throttled scroll handler
+    readReceiptScrollHandler = function() {
+        const now = Date.now();
+        if (now - lastScrollTime < SCROLL_THROTTLE) {
+            return;
+        }
+        lastScrollTime = now;
+        
+        if (readReceiptCheckTimeout) {
+            clearTimeout(readReceiptCheckTimeout);
+        }
+        
+        // Wait until scrolling stops for 500ms before checking
+        readReceiptCheckTimeout = setTimeout(checkUnreadMessages, 500);
+    };
+    
+    // Add scroll listener
+    chatBox.addEventListener('scroll', readReceiptScrollHandler);
+    
+    // Initial check after messages are rendered
+    setTimeout(checkUnreadMessages, 1000);
+}
+
+// ----------------------------------------------------
+// 22) cleanupReadReceipts
+// ----------------------------------------------------
+function cleanupReadReceipts() {
+    if (readReceiptCheckTimeout) {
+        clearTimeout(readReceiptCheckTimeout);
+        readReceiptCheckTimeout = null;
+    }
+    
+    if (readReceiptScrollHandler) {
+        chatBox.removeEventListener('scroll', readReceiptScrollHandler);
+        readReceiptScrollHandler = null;
+    }
+}
+
+// ----------------------------------------------------
+// 23) openDeleteMessageModal
+// ----------------------------------------------------
+let messageToDelete = null;
+let isClearingChat = false;
+
+function openDeleteMessageModal(messageId) {
+    messageToDelete = messageId;
+    const modal = document.getElementById('deleteMessageModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+// ----------------------------------------------------
+// 24) closeDeleteMessageModal
+// ----------------------------------------------------
+function closeDeleteMessageModal() {
+    const modal = document.getElementById('deleteMessageModal');
+    if (modal) modal.style.display = 'none';
+    messageToDelete = null;
+}
+
+// ----------------------------------------------------
+// 25) confirmDeleteMessage
+// ----------------------------------------------------
+function confirmDeleteMessage() {
+    if (messageToDelete) {
+        deleteMessage(messageToDelete);
+        closeDeleteMessageModal();
+    }
+}
+
+// ----------------------------------------------------
+// 26) openClearChatModal
+// ----------------------------------------------------
+function openClearChatModal() {
+    isClearingChat = true;
+    const modal = document.getElementById('clearChatModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+// ----------------------------------------------------
+// 27) closeClearChatModal
+// ----------------------------------------------------
+function closeClearChatModal() {
+    const modal = document.getElementById('clearChatModal');
+    if (modal) modal.style.display = 'none';
+    isClearingChat = false;
+}
+
+// ----------------------------------------------------
+// 28) confirmClearChat
+// ----------------------------------------------------
+function confirmClearChat() {
+    clearChat();
+    closeClearChatModal();
+}
+
+// ----------------------------------------------------
+// 29) saveEditedMessage
+// ----------------------------------------------------
+async function saveEditedMessage() {
+    if (!currentEditingMessageId) return;
+    
+    const newContent = editMessageText.value.trim();
+    if (!newContent) return;
+
+    // Update UI immediately
+    const messageElement = document.querySelector(`[data-message-id="${currentEditingMessageId}"]`);
+    if (messageElement) {
+        const messageBody = messageElement.querySelector('.body');
+        const timeElement = messageElement.querySelector('.time');
+        
+        if (messageBody && timeElement) {
+            messageBody.textContent = newContent;
+            timeElement.textContent = formatTime(new Date()) + ' (edited)';
+        }
+    }
+
+    // Check if we have a real ID or need to wait for it
+    if (currentEditingMessageId.startsWith('temp_')) {
+        // Store operation for when real ID becomes available
+        pendingMessageOperations.set(currentEditingMessageId, {
+            type: 'edit',
+            new_content: newContent
+        });
+    } else {
+        // Send edit immediately
+        safeWebSocketSend({
+            type: "edit_message",
+            message_id: currentEditingMessageId,
+            new_content: newContent
+        });
+    }
+    
+    closeEditModal();
+}
+
+// ----------------------------------------------------
+// 30) deleteMessage
+// ----------------------------------------------------
+async function deleteMessage(messageId) {
+    // Update UI immediately
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (messageElement) {
+        const messageBody = messageElement.querySelector('.body');
+        const actionsDiv = messageElement.querySelector('.message-actions');
+        
+        if (messageBody) {
+            messageBody.textContent = 'This message was deleted';
+        }
+        
+        if (actionsDiv) {
+            actionsDiv.remove();
+        }
+    }
+
+    // Check if we have a real ID or need to wait for it
+    if (messageId.startsWith('temp_')) {
+        // Store operation for when real ID becomes available
+        pendingMessageOperations.set(messageId, {
+            type: 'delete'
+        });
+    } else {
+        // Send delete immediately
+        safeWebSocketSend({
+            type: "delete_message",
+            message_id: messageId
+        });
+    }
+}
+
+// ----------------------------------------------------
+// 31) clearChat
+// ----------------------------------------------------
+async function clearChat() {
+    if (!currentFriend) return;
+    
+    try {
+        // Send clear via WebSocket
+        const success = safeWebSocketSend({
+            type: "clear_chat",
+            receiver_id: currentFriend.id
+        });
+        
+        if (!success) {
+            // Fallback: Send via HTTP if WebSocket fails
+            const response = await fetch('/chat/clear_chat/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken(),
+                },
+                body: JSON.stringify({
+                    user_id: currentFriend.id
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to clear chat');
+            }
+        }
+        
+        // Clear chat UI immediately
+        chatBox.innerHTML = '<div class="no-messages">No messages yet. Start the conversation!</div>';
+        
+        // Update contact list
+        updateContactLastMessage(currentFriend.id, '', false, new Date());
+        
+    } catch (error) {
+        console.error('Error clearing chat:', error);
+        showError('Failed to clear chat');
+    }
+}
+
+// ----------------------------------------------------
+// 32) addMessageToChat
+// ----------------------------------------------------
+function addMessageToChat(content, isSent, timeStr, senderId, messageId, isEdited = false, isDeleted = false, isRead = false) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+    msgDiv.dataset.messageId = messageId;
+    
+    // Store read state for received messages and sent messages
+    msgDiv.dataset.read = isRead ? 'true' : 'false';
+    
+    // Handle deleted messages
+    if (isDeleted) {
+        content = 'This message was deleted';
+    }
+    
+    const label = isSent ? 'You' : (currentFriend ? currentFriend.name : 'User');
+    
+    // Add status indicator for sent messages (only ✓ or ✓✓)
+    let statusIndicator = '';
+    if (isSent && !isDeleted) {
+        statusIndicator = `
+            <div class="message-status ${isRead ? 'read' : 'sent'}">
+                ${isRead ? '<span class="tick">✓</span><span class="tick">✓</span>' : '<span class="tick">✓</span>'}
+            </div>
+        `;
+    }
+    
+    msgDiv.innerHTML = `
+        <span class="sender-label">${label}</span>
+        <div class="body">${escapeHtml(content)}</div>
+        <div class="message-footer">
+            <small class="time">${timeStr}${isEdited ? ' (edited)' : ''}</small>
+            ${statusIndicator}
+        </div>
+    `;
+    
+    // Add action buttons for sender's messages (if not deleted and not temporary)
+    const isTempId = typeof messageId === 'string' && messageId.startsWith('temp_');
+    if (isSent && !isDeleted && !isTempId) {
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'message-actions';
+        actionsDiv.innerHTML = `
+            <button class="message-action-btn edit" onclick="editMessage('${messageId}')">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="message-action-btn delete" onclick="openDeleteMessageModal('${messageId}')">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        msgDiv.appendChild(actionsDiv);
+    }
+    
+    chatBox.appendChild(msgDiv);
+    // Auto-scroll to bottom
+    setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 60);
+}
+
+// ----------------------------------------------------
+// 33) loadMessages
+// ----------------------------------------------------
+async function loadMessages() {
+    if (!currentFriend) return;
+    
+    try {
+        // Show loading indicator
+        chatBox.innerHTML = '<div class="loading-spinner">Loading messages...</div>';
+        
+        const response = await fetch(`/chat/history/?user_id=${currentFriend.id}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        renderMessages(data.messages);
+    } catch (error) {
+        console.error('Error loading messages:', error);
+        chatBox.innerHTML = `
+            <div class="error-message">
+                Failed to load messages. Please try again.
+                <button onclick="loadMessages()">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// ----------------------------------------------------
+// 34) renderMessages
+// ----------------------------------------------------
+function renderMessages(messages) {
+    chatBox.innerHTML = '';
+    
+    if (!messages || messages.length === 0) {
+        chatBox.innerHTML = '<div class="no-messages">No messages yet. Start the conversation!</div>';
+        return;
+    }
+    
+    let lastDate = '';
+    
+    messages.forEach(msg => {
+        // Parse the ISO timestamp string
+        const msgDate = new Date(msg.timestamp);
+        const dateStr = msgDate.toDateString();
+        
+        // Add date divider if date changed
+        if (dateStr !== lastDate) {
+            lastDate = dateStr;
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'date-divider';
+            dateDiv.textContent = formatDateDivider(msgDate);
+            chatBox.appendChild(dateDiv);
+        }
+        
+        const isSent = msg.sender_id === userId;
+        const timeStr = formatTime(msg.timestamp);
+        
+        // Ensure read status is properly handled
+        const isRead = Boolean(msg.read);
+        
+        addMessageToChat(msg.message, isSent, timeStr, msg.sender_id, msg.id, msg.edited, msg.deleted, isRead);
+    });
+    
+    // Scroll to bottom after rendering
+    setTimeout(() => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+        // Ensure read receipts start working after render
+        setupReadReceipts();
+    }, 100);
+}
+
+// ----------------------------------------------------
+// 35) updateMessageInUI
+// ----------------------------------------------------
+function updateMessageInUI(messageId, newContent, timestamp) {
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageElement) return;
+    
+    const messageBody = messageElement.querySelector('.body');
+    const timeElement = messageElement.querySelector('.time');
+    
+    if (messageBody && timeElement) {
+        messageBody.textContent = newContent;
+        timeElement.textContent = formatTime(timestamp) + ' (edited)';
+    }
+}
+
+// ----------------------------------------------------
+// 36) deleteMessageFromUI
+// ----------------------------------------------------
+function deleteMessageFromUI(messageId) {
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageElement) return;
+    
+    const messageBody = messageElement.querySelector('.body');
+    const actionsDiv = messageElement.querySelector('.message-actions');
+    
+    if (messageBody) {
+        messageBody.textContent = 'This message was deleted';
+    }
+    
+    if (actionsDiv) {
+        actionsDiv.remove();
+    }
+}
+
+// ----------------------------------------------------
+// 37) editMessage
+// ----------------------------------------------------
+async function editMessage(messageId) {
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageElement) return;
+    
+    const messageBody = messageElement.querySelector('.body');
+    const currentContent = messageBody.textContent;
+    
+    // Store the message ID being edited
+    currentEditingMessageId = messageId;
+    
+    // Show edit modal
+    editMessageText.value = currentContent;
+    if (editModal) editModal.style.display = 'flex';
+    editMessageText.focus();
+}
+
+// ----------------------------------------------------
+// 38) closeEditModal
+// ----------------------------------------------------
+function closeEditModal() {
+    if (editModal) editModal.style.display = 'none';
+    currentEditingMessageId = null;
+    if (editMessageText) editMessageText.value = '';
+}
+
+// ----------------------------------------------------
+// 39) updateContactLastMessage
+// ----------------------------------------------------
+function updateContactLastMessage(contactId, message, isSent, timestamp) {
+    const contacts = document.querySelectorAll('.contact');
+    
+    contacts.forEach(contact => {
+        if (contact.dataset.contactId === contactId) {
+            const lastMsgEl = contact.querySelector('.contact-last-msg');
+            const timeEl = contact.querySelector('.contact-time');
+            
+            if (lastMsgEl && timeEl) {
+                lastMsgEl.textContent = isSent ? `You: ${truncateMessage(message, 20)}` : truncateMessage(message, 20);
+                timeEl.innerHTML = formatTime(timestamp);
+                
+                // Move to top of list
+                contactList.prepend(contact);
+            }
+        }
+    });
+}
+
+// ----------------------------------------------------
+// 40) getCSRFToken
+// ----------------------------------------------------
+function getCSRFToken() {
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    
+    return cookieValue || '';
+}
+
+// ----------------------------------------------------
+// 41) getInitialsFromName
+// ----------------------------------------------------
+function getInitialsFromName(name) {
+    if (!name) return "C";
+    const parts = name.split(' ');
+    let initials = parts[0].charAt(0).toUpperCase();
+    if (parts.length > 1) initials += parts[parts.length - 1].charAt(0).toUpperCase();
+    return initials || "C";
+}
+
+// ----------------------------------------------------
+// 42) formatTime
+// ----------------------------------------------------
+function formatTime(timestamp) {
+    try {
+        const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+        return date.toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch (e) {
+        console.error('Error formatting time:', e);
+        return '';
+    }
+}
+
+// ----------------------------------------------------
+// 43) formatLastSeen
+// ----------------------------------------------------
+function formatLastSeen(timestamp) {
+    if (!timestamp) return 'a long time ago';
+    try {
+        const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+        const now = new Date();
+        const diffMinutes = Math.floor((now - date) / (1000 * 60));
+        
+        if (diffMinutes < 1) return 'just now';
+        if (diffMinutes < 60) return `${diffMinutes} min ago`;
+        if (diffMinutes < 1440) return `${Math.floor(diffMinutes/60)} hours ago`;
+        
+        return date.toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: (date.getFullYear() !== now.getFullYear()) ? 'numeric' : undefined
+        });
+    } catch (e) {
+        console.error('Error formatting last seen:', e);
+        return '';
+    }
+}
+
+// ----------------------------------------------------
+// 44) formatDateDivider
+// ----------------------------------------------------
+function formatDateDivider(date) {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    
+    return date.toLocaleDateString('en-IN', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+}
+
+// ----------------------------------------------------
+// 45) truncateMessage
+// ----------------------------------------------------
+function truncateMessage(text, length) {
+    if (!text) return '';
+    return text.length > length ? text.substring(0, length) + '...' : text;
+}
+
+// ----------------------------------------------------
+// 46) escapeHtml
+// ----------------------------------------------------
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// ----------------------------------------------------
+// 47) playNotificationSound
+// ----------------------------------------------------
+function playNotificationSound() {
+    const audio = new Audio('/static/notification.mp3');
+    audio.play().catch(e => console.log('Audio play failed:', e));
+}
+
+// ----------------------------------------------------
+// 48) showError
+// ----------------------------------------------------
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+    setTimeout(() => errorDiv.remove(), 3000);
+}
+
+// ----------------------------------------------------
+// Additional event listeners (anonymous) for modals/keys/typing
+// These are not counted among the 48 named functions
+// ----------------------------------------------------
+
+// Close modals when clicking outside
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('confirmation-modal')) {
+        if (e.target.id === 'deleteMessageModal') {
+            closeDeleteMessageModal();
+        } else if (e.target.id === 'clearChatModal') {
+            closeClearChatModal();
+        }
+    }
+});
+
+// Close modals with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (document.getElementById('deleteMessageModal') && document.getElementById('deleteMessageModal').style.display === 'flex') {
+            closeDeleteMessageModal();
+        } else if (document.getElementById('clearChatModal') && document.getElementById('clearChatModal').style.display === 'flex') {
+            closeClearChatModal();
+        }
+    }
+});
+
+// Typing indicator
+if (messageInput) {
+    messageInput.addEventListener('input', function() {
+        if (!currentFriend) return;
+        
+        clearTimeout(typingTimer);
+        
+        // Send typing started
+        safeWebSocketSend({
+            type: "typing",
+            sender_id: userId,
+            receiver_id: currentFriend.id,
+            is_typing: true
+        });
+        
+        // Send typing stopped after 2 seconds of inactivity
+        typingTimer = setTimeout(() => {
+            safeWebSocketSend({
+                type: "typing",
+                sender_id: userId,
+                receiver_id: currentFriend.id,
+                is_typing: false
+            });
+        }, 2000);
+    });
+}
+
+// Enter to send
+if (messageInput) {
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+}
+
+// Close edit modal on click outside
+window.addEventListener('click', function(e) {
+    if (e.target === editModal) {
+        closeEditModal();
+    }
+});
+
+// Close modal with Escape key (edit)
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && editModal && editModal.style.display === 'flex') {
+        closeEditModal();
+    }
+});
+
+// Responsive resize handling
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+        contactsPanel.classList.remove('active');
+        chatPanel.classList.remove('hidden');
+    }
+});
+
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,122 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - ChitChat</title>
+  <link rel="icon" href="{% static 'favicon.png' %}" type="image/png">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #4ce4d0, #007bff);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .login-container h1 {
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      width: 100%;
+    }
+
+    button[type="submit"] {
+      padding: 12px;
+      background-color: #4ce4d0;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #3ac0bb;
+    }
+
+    p {
+      margin-top: 1rem;
+      font-size: 14px;
+    }
+
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .error-msg {
+      color: red;
+      margin-top: 0.5rem;
+      font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 1.5rem;
+      }
+
+      .login-container h1 {
+        font-size: 22px;
+      }
+
+      input,
+      button {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>Welcome Back</h1>
+    <form method="post" action="{% url 'login' %}">
+      {% csrf_token %}
+      <input type="email" name="email" placeholder="you@example.com" required>
+      <input type="password" name="password" placeholder="••••••••" required>
+      <button type="submit">Sign in</button>
+    </form>
+    <p>Don't have an account? <a href="{% url 'create_account' %}">Create account</a></p>
+    {% if error %}
+      <p class="error-msg">{{ error }}</p>
+    {% endif %}
+  </div>
+</body>
+</html>

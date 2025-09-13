@@ -1,0 +1,727 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChitChat - Profile</title>
+  <link rel="icon" href="{% static 'favicon.png' %}" type="image/png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #4ce4d0;
+      --secondary-color: #3a7bd5;
+      --danger-color: #e74c3c;
+      --dark-danger: #c0392b;
+      --text-color: #2c3e50;
+      --light-gray: #ecf0f1;
+      --medium-gray: #bdc3c7;
+      --white: #ffffff;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--light-gray);
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .app-header {
+      background: var(--white);
+      box-shadow: var(--shadow);
+      padding: 15px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--primary-color);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 15px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: var(--white);
+    }
+
+    .btn-primary:hover {
+      background-color: #3bc9b8;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background-color: var(--secondary-color);
+      color: var(--white);
+    }
+
+    .btn-secondary:hover {
+      background-color: #2c65c4;
+      transform: translateY(-2px);
+    }
+
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: var(--white);
+      margin-top: 10px;
+    }
+
+    .main-content {
+      padding: 30px 0;
+    }
+
+    .profile-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--white);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .profile-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: var(--white);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .profile-body {
+      padding: 30px;
+    }
+
+    .profile-section {
+      margin-bottom: 30px;
+    }
+
+    .profile-section h3 {
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--medium-gray);
+      color: var(--secondary-color);
+    }
+
+    .profile-avatar-container {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 20px;
+    }
+
+  .profile-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    {% comment %} border: 3px solid var(--white);    {% endcomment %}
+    border: 3px solid var(--primary-color);
+    box-shadow: var(--shadow);      
+  }
+
+  .profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block; 
+    border: none; 
+    box-shadow: none;
+  }
+
+    .avatar-initials {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: var(--white);
+      font-size: 48px;
+      font-weight: bold;
+      border: 3px solid var(--white);
+      box-shadow: var(--shadow);
+      border-radius: 50%;
+      text-transform: uppercase;
+    }
+
+    .avatar-actions {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      background: var(--primary-color);
+      color: var(--white);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 2px solid var(--white);
+      transition: all 0.3s ease;
+      z-index: 2;
+    }
+
+    .dropdown {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 10px);
+      background: var(--white);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      z-index: 10;
+      width: 180px;
+      display: none;
+      flex-direction: column;
+      padding: 10px 0;
+    }
+
+    .dropdown.show {
+      display: flex;
+    }
+
+    .dropdown button {
+      background: none;
+      border: none;
+      padding: 10px 16px;
+      text-align: left;
+      cursor: pointer;
+      color: var(--text-color);
+      font-size: 14px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dropdown button:hover {
+      background: var(--light-gray);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px 40px 10px 15px;
+      border: 1px solid var(--medium-gray);
+      border-radius: 5px;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .status-active {
+      color: #27ae60;
+      font-weight: 600;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .action-buttons .btn {
+      flex: 1;
+      text-align: center;
+      padding: 12px;
+      margin-bottom: 15px;
+    }
+
+    .password-toggle-icon {
+      position: absolute;
+      right: 15px;
+      top: 38px;
+      cursor: pointer;
+      color: var(--medium-gray);
+      z-index: 2;
+      font-size: 16px;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6); /* slightly darker for better focus */
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 15px; /* ensures content isn't cut off on very small screens */
+    }
+
+    .modal-content {
+      background: var(--white);
+      padding: 25px 30px;
+      border-radius: 12px;
+      max-width: 480px;  /* good width for desktop */
+      width: 100%;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal h3 {
+      margin-bottom: 15px;
+      color: var(--danger-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+    }
+
+    .modal p {
+      margin-bottom: 12px;
+      font-size: 15px;
+    }
+
+    .modal ul {
+      margin-left: 20px;
+      margin-bottom: 20px;
+      list-style: disc;
+      font-size: 14px;
+      color: var(--text-color);
+    }
+
+    .modal-buttons {
+      margin-top: 20px;
+    }
+
+    .modal-buttons .btn {
+      margin-left: 60px;
+    }
+
+
+    .modal-buttons .btn:hover {
+      transform: translateY(-2px);
+    }
+
+
+    /* Small fade-in animation for modal */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .profile-container {
+        max-width: 100%;
+      }
+      
+      .profile-body {
+        padding: 20px;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+      }
+      
+      .avatar-initials {
+        font-size: 36px;
+      }
+      
+
+      .modal-content {
+        max-width: 95%;
+        padding: 20px;
+      }
+
+      .modal h3 {
+        font-size: 18px;
+      }
+
+      .modal p,
+      .modal ul {
+        font-size: 14px;
+      }
+
+      .modal-buttons {
+        
+        display: flex
+        flex-direction: column;
+        gap: 10px;
+        justify-content: stretch;
+      }
+
+      .modal-buttons .btn {
+        width: 100%;
+        min-width: unset;
+        margin-left: auto;
+        margin-top: 20px
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-content">
+      <a href="{% url 'index' %}" class="logo">
+        ChitChat
+      </a>
+      <div class="nav-buttons">
+        <a href="{% url 'index' %}" class="btn btn-primary">
+          <i class="fas fa-arrow-left"></i> Back
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="profile-container">
+        <div class="profile-header">
+          <h2>Your Profile</h2>
+        </div>
+        
+        <div class="profile-body">
+          <form method="post" enctype="multipart/form-data" action="{% url 'edit_profile' %}">
+            {% csrf_token %}
+            
+            <div class="profile-section">
+              <div class="profile-avatar-container">
+                <div class="profile-avatar">
+                  {% if user.avatar_base64 %}
+                    <img id="avatarPreview" src="data:image/png;base64,{{ user.avatar_base64 }}" alt="Profile Avatar" />
+                  {% else %}
+                    <div class="avatar-initials" id="avatarInitials">
+                      {% if user.full_name %}
+                        {% with name_parts=user.full_name.split %}
+                          {{ name_parts.0.0|upper }}{% if name_parts.1 %}{{ name_parts.1.0|upper }}{% endif %}
+                        {% endwith %}
+                      {% else %}
+                        {{ user.email.0|upper|default:"U" }}
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+                <input type="file" name="avatar" id="avatarUpload" accept="image/*" onchange="previewAvatar()" hidden />
+                <input type="hidden" name="remove_avatar" id="removeAvatarFlag" value="false" />
+                
+                <div class="avatar-actions" onclick="toggleDropdown(event)">
+                  <i class="fas fa-pencil-alt"></i>
+                </div>
+                <div class="dropdown" id="avatarDropdown">
+                  <button type="button" onclick="document.getElementById('avatarUpload').click()">
+                    <i class="fas fa-camera"></i> Change Photo
+                  </button>
+                  {% if user.avatar_base64 %}
+                    <button type="button" onclick="removeAvatar()">
+                      <i class="fas fa-trash-alt"></i> Remove Photo
+                    </button>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <div class="profile-section">
+              <h3>Personal Information</h3>
+              
+              <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input type="text" class="form-control" name="full_name" id="fullName" 
+                       value="{{ user.full_name }}" required />
+              </div>
+              
+              <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" class="form-control" name="email" id="email" 
+                       value="{{ user.email }}" required />
+              </div>
+            </div>
+            
+            <div class="profile-section">
+              <h3>Change Password</h3>
+              
+              <div class="form-group">
+                <label for="currentPassword">Current Password</label>
+                <input type="password" class="form-control" name="current_password" 
+                       id="currentPassword" placeholder="Enter current password" />
+                <span class="password-toggle-icon" onclick="togglePassword('currentPassword')">
+                  <i class="fas fa-eye"></i>
+                </span>
+              </div>
+              
+              <div class="form-group">
+                <label for="newPassword">New Password</label>
+                <input type="password" class="form-control" name="new_password" 
+                       id="newPassword" placeholder="Enter new password" />
+                <span class="password-toggle-icon" onclick="togglePassword('newPassword')">
+                  <i class="fas fa-eye"></i>
+                </span>
+              </div>
+              
+              <div class="form-group">
+                <label for="confirmPassword">Confirm New Password</label>
+                <input type="password" class="form-control" name="confirm_password" 
+                       id="confirmPassword" placeholder="Confirm new password" />
+                <span class="password-toggle-icon" onclick="togglePassword('confirmPassword')">
+                  <i class="fas fa-eye"></i>
+                </span>
+              </div>
+            </div>
+            
+            <div class="profile-section">
+              <h3>Account Information</h3>
+              <p><strong>Member Since:</strong> {{ user.joined_on|date:"F j, Y" }}</p>
+              <p><strong>Status:</strong> <span class="status-active">Active</span></p>
+            </div>
+            
+            <div class="action-buttons">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Changes
+              </button>
+              <a href="{% url 'index' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+              </a>
+            </div>
+          </form>
+          
+          <div class="danger-zone">
+            <h3>Danger Zone</h3>
+            <p>Deleting your account will remove all your data permanently. This action cannot be undone.</p>
+            
+            <button onclick="showDeleteModal()" class="btn btn-danger" style="width: 100%;">
+              <i class="fas fa-trash-alt"></i> Delete My Account
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h3><i class="fas fa-exclamation-triangle"></i> Confirm Account Deletion</h3>
+      <p>Are you absolutely sure you want to permanently delete your account? This will:</p>
+      <ul>
+        <li>Delete all your messages and conversations</li>
+        <li>Remove your profile information</li>
+        <li>This action cannot be undone</li>
+      </ul>
+      <div class="modal-buttons">
+        <form method="post" action="{% url 'delete_account' %}" style="display: inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash-alt"></i> Delete Account
+          </button>
+        </form>
+        <button onclick="cancelDelete()" class="btn btn-secondary">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+
+// Avatar handling
+function toggleDropdown(event) {
+  event.stopPropagation();
+  const dropdown = document.getElementById("avatarDropdown");
+  dropdown.classList.toggle("show");
+}
+
+function previewAvatar() {
+  const file = document.getElementById("avatarUpload").files[0];
+  const avatarInitials = document.getElementById("avatarInitials");
+  const preview = document.getElementById("avatarPreview");
+  const removeFlag = document.getElementById("removeAvatarFlag");
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      // Remove initials if they exist
+      if (avatarInitials) {
+        avatarInitials.remove();
+      }
+
+      // Create image if it doesn't exist
+      if (!preview) {
+        const img = document.createElement("img");
+        img.id = "avatarPreview";
+        img.alt = "Profile Avatar";
+        img.style.borderRadius = "50%";
+        document.querySelector(".profile-avatar").prepend(img);
+      }
+
+      document.getElementById("avatarPreview").src = e.target.result;
+      removeFlag.value = "false";
+
+      // Add remove option to dropdown if it doesn't exist
+      const dropdown = document.getElementById("avatarDropdown");
+      const removeOption = dropdown.querySelector(".remove-option");
+      if (!removeOption) {
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Remove Photo';
+        removeBtn.classList.add("remove-option");
+        removeBtn.addEventListener("click", function (e) {
+          e.stopPropagation(); // prevent dropdown closing conflict
+          removeAvatar();
+        });
+        dropdown.appendChild(removeBtn);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+  document.getElementById("avatarDropdown").classList.remove("show");
+}
+
+function removeAvatar() {
+  const avatarContainer = document.querySelector(".profile-avatar");
+  const avatarInitials = document.getElementById("avatarInitials");
+  const avatarPreview = document.getElementById("avatarPreview");
+  const dropdown = document.getElementById("avatarDropdown");
+
+  // Remove existing preview if it exists
+  if (avatarPreview) {
+    avatarPreview.remove();
+  }
+
+  // Create initials display if it doesn't exist
+  if (!avatarInitials) {
+    const initialsDiv = document.createElement("div");
+    initialsDiv.className = "avatar-initials";
+    initialsDiv.id = "avatarInitials";
+
+    // Get initials from full name
+    const fullNameInput = document.getElementById("fullName");
+    const fullName = fullNameInput ? fullNameInput.value.trim() : "U";
+    const nameParts = fullName.split(" ").filter(Boolean);
+
+    let initials = nameParts.length > 0 ? nameParts[0][0].toUpperCase() : "U";
+    if (nameParts.length > 1) {
+      initials += nameParts[nameParts.length - 1][0].toUpperCase();
+    }
+
+    initialsDiv.textContent = initials || "U";
+    avatarContainer.prepend(initialsDiv);
+  }
+
+  // Clear file input and set remove flag
+  document.getElementById("avatarUpload").value = "";
+  document.getElementById("removeAvatarFlag").value = "true";
+
+  // Remove the remove option from dropdown
+  const removeOption = dropdown.querySelector(".remove-option");
+  if (removeOption) {
+    removeOption.remove();
+  }
+
+  dropdown.classList.remove("show");
+}
+
+// Password visibility toggle
+function togglePassword(id) {
+  const input = document.getElementById(id);
+  const icon = document.querySelector(`#${id} + span i`);
+  if (input.type === "password") {
+    input.type = "text";
+    icon.classList.replace("fa-eye", "fa-eye-slash");
+  } else {
+    input.type = "password";
+    icon.classList.replace("fa-eye-slash", "fa-eye");
+  }
+}
+
+// Delete confirmation modal
+function showDeleteModal() {
+  document.getElementById("deleteModal").style.display = "flex";
+}
+
+function cancelDelete() {
+  document.getElementById("deleteModal").style.display = "none";
+}
+
+// Close dropdown and modal when clicking outside
+document.addEventListener("click", function (event) {
+  const dropdown = document.getElementById("avatarDropdown");
+  const avatarActions = document.querySelector(".avatar-actions");
+
+  if (dropdown && avatarActions && 
+      !dropdown.contains(event.target) && 
+      !avatarActions.contains(event.target)) {
+    dropdown.classList.remove("show");
+  }
+
+  // Close modal if clicking outside
+  const modal = document.getElementById("deleteModal");
+  if (event.target === modal) {
+    modal.style.display = "none";
+  }
+});
+
+// Update initials when name changes
+const fullNameInput = document.getElementById("fullName");
+if (fullNameInput) {
+  fullNameInput.addEventListener("input", function () {
+    const initialsDiv = document.getElementById("avatarInitials");
+    if (initialsDiv) {
+      const nameParts = this.value.split(" ").filter(Boolean);
+      let initials = nameParts.length > 0 ? nameParts[0][0].toUpperCase() : "U";
+      if (nameParts.length > 1) {
+        initials += nameParts[nameParts.length - 1][0].toUpperCase();
+      }
+      initialsDiv.textContent = initials || "U";
+    }
+  });
+}
+  </script>
+</body>
+</html>
