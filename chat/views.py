@@ -352,8 +352,6 @@ def clear_chat(request):
         print(f"Error clearing chat: {str(e)}")
         return JsonResponse({"error": "Failed to clear chat"}, status=500)
 
-@csrf_exempt
-@require_POST
 def create_account(request):
     if request.method == 'POST':
         name = request.POST['name']
@@ -376,8 +374,6 @@ def create_account(request):
 
     return render(request, 'create_account.html')
 
-@csrf_exempt
-@require_POST
 def login_view(request):
     if request.method == 'POST':
         email = request.POST['email']
@@ -394,8 +390,6 @@ def login_view(request):
 
     return render(request, 'login.html')
 
-@csrf_exempt
-@require_POST
 def logout_view(request):
     email = request.session.get('email')
     if email:
@@ -403,8 +397,6 @@ def logout_view(request):
     request.session.flush()
     return redirect('login')
 
-@csrf_exempt
-@require_POST
 def delete_account(request):
     if 'email' not in request.session:
         return redirect('login')
