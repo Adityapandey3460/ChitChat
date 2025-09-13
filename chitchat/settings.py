@@ -26,9 +26,16 @@ SECRET_KEY = 'django-insecure-p=)s6xyy(y(%s4&f@mo01l6s31$c)5tf0*v+4vte52!0m%a3-(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS=["*"
+ALLOWED_HOSTS=["*","chitchat-vmuh.onrender.com",
+    "localhost",
+    "127.0.0.1",
 
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://chitchat-vmuh.onrender.com",
+]
+
 
 # settings.py
 # ALLOWED_HOSTS = [
