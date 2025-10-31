@@ -1,7 +1,14 @@
+# routing.py
 from django.urls import re_path
-from . import consumers
+from . import consumers_individual
+from . import consumers_group
 
 websocket_urlpatterns = [
-    re_path(r'ws/chat/(?P<room_name>[a-zA-Z0-9_]+)/$', consumers.ChatConsumer.as_asgi()),
-    # re_path(r"ws/presence/$", consumers.ChatConsumer.as_asgi()),
+    # Individual chat routes
+    re_path(r'ws/chat/(?P<room_name>[^/]+)/$', 
+            consumers_individual.IndividualChatConsumer.as_asgi()),
+    
+    # Group chat routes
+    re_path(r'ws/group/(?P<group_id>[^/]+)/$',
+            consumers_group.GroupChatConsumer.as_asgi()),
 ]
