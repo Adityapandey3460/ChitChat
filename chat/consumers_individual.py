@@ -1,22 +1,16 @@
 # consumers_individual.py
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from pymongo import MongoClient
+import motor.motor_asyncio
 from bson import ObjectId
 from django.utils.timezone import now
+from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env
 
-# MongoDB setup
-MONGO_URI = os.getenv("MONGO_URI")
-
-client = MongoClient(MONGO_URI)
-db = client['chat_new']
-
-users_collection = db['users']
-messages_collection = db['messages_websocket']
+from .views.common import async_users_collection as users_collection, async_messages_collection as messages_collection
 
 class IndividualChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -41,14 +35,11 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
         self.user_name = user_data['full_name']
         self.user_has_encryption = user_data.get('has_encryption', False)
 
-        # Mark user as online using ObjectId
-        users_collection.update_one(
-            {"_id": self.user_object_id},
-            {"$set": {"status": "online", "last_seen": now()}}
-        )
-
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
+
+        # REMOVED: Redundant status mark/broadcast here. 
+        # Handled by GlobalConsumer now.
 
         # Send connection confirmation with encryption status
         await self.send(text_data=json.dumps({
@@ -59,16 +50,15 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
         }))
 
     async def disconnect(self, close_code):
-        try:
-            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        except Exception:
-            pass
+        if hasattr(self, 'room_group_name'):
+            try:
+                await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+            except Exception:
+                pass
 
-        # Mark user as offline using ObjectId
-        users_collection.update_one(
-            {"_id": self.user_object_id},
-            {"$set": {"status": "offline", "last_seen": now()}}
-        )
+        # Mark user as offline - MOVED to GlobalConsumer
+        # if hasattr(self, 'user_object_id'):
+        #     ...
 
     async def receive(self, text_data):
         try:
@@ -103,7 +93,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
     async def get_user_encryption_status(self):
         """Get user data with encryption status"""
         try:
-            user = users_collection.find_one({"_id": self.user_object_id})
+            user = await users_collection.find_one({"_id": self.user_object_id})
             if not user:
                 return None
             
@@ -126,9 +116,12 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
         iv = data.get("iv")  # Initialization vector
         receiver_id = data.get("receiver_id")  # String from frontend
         temp_id = data.get("temp_id")
+        is_image = data.get("is_image", False)
+        image_size = data.get("image_size")
+        media_id = data.get("media_id")
 
-        # Require either plaintext or encrypted content
-        if (not message_content and not encrypted_content) or not receiver_id:
+        # Require either plaintext, encrypted content, or image
+        if (not message_content and not encrypted_content and not is_image) or not receiver_id:
             return
 
         # Convert receiver_id to ObjectId for database
@@ -138,7 +131,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
         room = "_".join(sorted([self.user_id, receiver_id]))
 
         # Check if receiver has encryption using ObjectId
-        receiver = users_collection.find_one({"_id": receiver_object_id})
+        receiver = await users_collection.find_one({"_id": receiver_object_id})
         receiver_has_encryption = receiver and 'encryption_keys' in receiver and receiver['encryption_keys'] is not None
         
         # Determine if this message is encrypted
@@ -158,10 +151,13 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
             "deleted": False,
             "message_type": "individual",
             "is_encrypted": is_encrypted,
+            "is_image": is_image,
+            "image_size": image_size,
+            "media_id": media_id,
             "encryption_enabled": receiver_has_encryption
         }
         
-        result = messages_collection.insert_one(message_doc)
+        result = await messages_collection.insert_one(message_doc)
         message_id = str(result.inserted_id)
 
         # Prepare event for broadcasting (send strings to frontend)
@@ -178,6 +174,9 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
             "temp_id": temp_id,
             "message_type": "individual",
             "is_encrypted": is_encrypted,
+            "is_image": is_image,
+            "image_size": image_size,
+            "media_id": media_id,
             "encryption_enabled": receiver_has_encryption,
             "sender_has_encryption": self.user_has_encryption
         }
@@ -209,10 +208,14 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
             if iv:
                 update_data["iv"] = iv
             
-            result = messages_collection.update_one(
+            # Limit edit to 5 minutes
+            five_minutes_ago = now() - timedelta(minutes=5)
+            
+            result = await messages_collection.update_one(
                 {
                     "_id": ObjectId(message_id), 
-                    "sender_id": self.user_object_id  # ObjectId comparison
+                    "sender_id": self.user_object_id,
+                    "timestamp": {"$gte": five_minutes_ago}
                 },
                 {"$set": update_data}
             )
@@ -249,7 +252,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
             if isinstance(message_id, str) and message_id.startswith('temp_'):
                 return
                 
-            result = messages_collection.update_one(
+            result = await messages_collection.update_one(
                 {
                     "_id": ObjectId(message_id), 
                     "sender_id": self.user_object_id  # ObjectId comparison
@@ -287,7 +290,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
 
         try:
             # Delete all individual messages in this room
-            result = messages_collection.delete_many({
+            result = await messages_collection.delete_many({
                 "room": room,
                 "message_type": "individual"
             })
@@ -325,7 +328,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
                 continue
 
         if object_ids:
-            result = messages_collection.update_many(
+            result = await messages_collection.update_many(
                 {
                     "_id": {"$in": object_ids},
                     "receiver_id": self.user_object_id  # ObjectId comparison
@@ -369,7 +372,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
             print(f"🔐 PUBLIC KEY REQUEST - From: {self.user_id}, To: {contact_id}")
             
             # Get contact's encryption status using ObjectId
-            contact = users_collection.find_one({"_id": ObjectId(contact_id)})
+            contact = await users_collection.find_one({"_id": ObjectId(contact_id)})
             if not contact:
                 return
 
@@ -377,7 +380,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
             
             if contact_has_encryption:
                 # Send public key request to contact
-                await self.channel_layer.send(
+                await self.channel_layer.group_send(
                     f"user_{contact_id}",  # Send to contact's personal channel
                     {
                         "type": "public_key_request",
@@ -427,7 +430,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
                 return
 
             # Send public key to contact
-            await self.channel_layer.send(
+            await self.channel_layer.group_send(
                 f"user_{contact_id}",
                 {
                     "type": "public_key_shared",
@@ -459,7 +462,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
                 return
 
             # Send encryption status to the specific contact
-            await self.channel_layer.send(
+            await self.channel_layer.group_send(
                 f"user_{contact_id}",
                 {
                     "type": "encryption_status_update",
@@ -487,7 +490,7 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
             print(f"🔐 KEY EXCHANGE - Type: {key_type}, From: {self.user_id}, To: {contact_id}")
 
             # Forward key exchange data to the contact
-            await self.channel_layer.send(
+            await self.channel_layer.group_send(
                 f"user_{contact_id}",
                 {
                     "type": "key_exchange",
@@ -522,6 +525,10 @@ class IndividualChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(event))
 
     async def individual_typing_indicator(self, event):
+        await self.send(text_data=json.dumps(event))
+
+    async def user_status_update(self, event):
+        """Receive online/offline status update from another user"""
         await self.send(text_data=json.dumps(event))
 
     # Encryption-related event handlers

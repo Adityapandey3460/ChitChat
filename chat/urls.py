@@ -50,4 +50,13 @@ urlpatterns = [
     path('groups/create_with_encryption/', views.create_group_with_encryption, name='create_group_with_encryption'),
     path('groups/add_members_with_encryption/', views.add_members_with_encryption, name='add_members_with_encryption'),
     path('encryption/get_my_encrypted_group_seed/', views.get_my_encrypted_group_seed, name='get_my_encrypted_group_seed'),
+
+    # Avatar optimization
+    path('avatar/user/<str:user_id>/', views.get_user_avatar, name='get_user_avatar'),
+    path('avatar/contact/<str:user_id>/', views.get_user_avatar, name='get_contact_avatar_alias'),
+    path('avatar/group/<str:group_id>/', views.get_group_avatar, name='get_group_avatar'),
+
+    # Media Sharing (WhatsApp-style link-based approach)
+    path('media/upload/', views.upload_media, name='upload_media'),
+    path('media/download/<str:media_id>/', views.download_media, name='download_media'),
 ]

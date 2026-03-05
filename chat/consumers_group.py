@@ -1,23 +1,16 @@
 # consumers_group.py
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from pymongo import MongoClient, UpdateOne
+import motor.motor_asyncio
 from bson import ObjectId
 from django.utils.timezone import now
+from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env
 
-# MongoDB setup
-MONGO_URI = os.getenv("MONGO_URI")
-
-client = MongoClient(MONGO_URI)
-db = client['chat_new']
-
-users_collection = db['users']
-groups_collection = db['groups']
-group_messages_collection = db['messages_group']
+from .views.common import async_users_collection as users_collection, async_groups_collection as groups_collection, async_group_messages_collection as group_messages_collection
 
 class GroupChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -46,12 +39,6 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             self.user_has_encryption = user_data.get('has_encryption', False)
             self.room_group_name = f'group_{self.group_id}'  # Keep group_id as string for room name
 
-            # Mark user as online using ObjectId
-            users_collection.update_one(
-                {"_id": self.user_object_id},
-                {"$set": {"status": "online", "last_seen": now()}}
-            )
-
             await self.channel_layer.group_add(self.room_group_name, self.channel_name)
             await self.accept()
 
@@ -75,33 +62,29 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             return
 
     async def disconnect(self, close_code):
-        try:
-            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        except Exception as e:
-            print(f"Error discarding channel: {e}")
+        if hasattr(self, 'room_group_name'):
+            try:
+                await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+            except Exception as e:
+                print(f"Error discarding channel: {e}")
 
-        try:
-            # Mark user as offline using ObjectId
-            users_collection.update_one(
-                {"_id": self.user_object_id},
-                {"$set": {"status": "offline", "last_seen": now()}}
-            )
-        except Exception as e:
-            print(f"Error updating user status: {e}")
+        if hasattr(self, 'user_object_id'):
+            pass # Mark offline handled by GlobalConsumer
 
-        try:
-            # Send leave notification
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    "type": "group_user_left",
-                    "user_id": self.user_id,  # Send string to frontend
-                    "username": self.user_name,
-                    "timestamp": now().isoformat()
-                }
-            )
-        except Exception as e:
-            print(f"Error sending leave notification: {e}")
+        if hasattr(self, 'room_group_name') and hasattr(self, 'user_id') and hasattr(self, 'user_name'):
+            try:
+                # Send leave notification
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "group_user_left",
+                        "user_id": self.user_id,  # Send string to frontend
+                        "username": self.user_name,
+                        "timestamp": now().isoformat()
+                    }
+                )
+            except Exception as e:
+                print(f"Error sending leave notification: {e}")
 
     async def receive(self, text_data):
         try:
@@ -153,13 +136,13 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         """Check if user is a member of this group and get user data with encryption status"""
         try:
             # Get user data using ObjectId
-            user = users_collection.find_one({"_id": self.user_object_id})
+            user = await users_collection.find_one({"_id": self.user_object_id})
             if not user:
                 print(f"❌ User {self.user_id} not found in database")
                 return None
             
             # Check group membership using ObjectIds
-            group = groups_collection.find_one({
+            group = await groups_collection.find_one({
                 "_id": self.group_object_id,
                 "members": self.user_object_id  # ObjectId comparison
             })
@@ -167,7 +150,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             if not group:
                 print(f"❌ User {self.user_id} is not a member of group {self.group_id}")
                 # Debug info
-                debug_group = groups_collection.find_one({"_id": self.group_object_id})
+                debug_group = await groups_collection.find_one({"_id": self.group_object_id})
                 if debug_group:
                     member_ids = [str(member) for member in debug_group.get('members', [])]
                     print(f"🔍 Group members: {member_ids}")
@@ -191,7 +174,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
     async def validate_current_membership(self):
         """Revalidate if current user is still a group member"""
         try:
-            group = groups_collection.find_one({
+            group = await groups_collection.find_one({
                 "_id": self.group_object_id,
                 "members": self.user_object_id,
                 "is_active": True
@@ -204,7 +187,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
     async def validate_admin_permissions(self):
         """Revalidate if current user is still an admin"""
         try:
-            group = groups_collection.find_one({
+            group = await groups_collection.find_one({
                 "_id": self.group_object_id,
                 "admin_ids": self.user_object_id
             })
@@ -216,7 +199,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
     async def get_group_member_count(self):
         """Get current member count for the group"""
         try:
-            group = groups_collection.find_one({"_id": self.group_object_id})
+            group = await groups_collection.find_one({"_id": self.group_object_id})
             if group:
                 return len(group.get('members', []))
             return 0
@@ -240,15 +223,18 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         encrypted_content = data.get("encrypted_content")
         iv = data.get("iv")
         temp_id = data.get("temp_id")
+        is_image = data.get("is_image", False)
+        image_size = data.get("image_size")
+        media_id = data.get("media_id")
 
-        # Require either plaintext or encrypted content
-        if not message_content and not encrypted_content:
+        # Require either plaintext, encrypted content, or image
+        if not message_content and not encrypted_content and not is_image:
             return
 
         timestamp = now()
 
         # Check if group has encryption enabled using ObjectId
-        group = groups_collection.find_one({"_id": self.group_object_id})
+        group = await groups_collection.find_one({"_id": self.group_object_id})
         group_encryption_enabled = group.get('encryption_enabled', False) if group else False
         
         # Determine if this message is encrypted
@@ -264,12 +250,15 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             "iv": iv,
             "timestamp": timestamp,
             "message_type": "group",
+            "is_image": is_image,
+            "image_size": image_size,
+            "media_id": media_id,
             "read_by": [self.user_object_id],  # ObjectId in array
             "is_encrypted": is_encrypted,
             "encryption_enabled": group_encryption_enabled
         }
         
-        result = group_messages_collection.insert_one(message_doc)
+        result = await group_messages_collection.insert_one(message_doc)
         message_id = str(result.inserted_id)  # Convert to string for frontend
 
         # Update group's last message using ObjectId
@@ -277,7 +266,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         if is_encrypted and not message_content:
             last_message_content = "🔒 Encrypted message"
             
-        groups_collection.update_one(
+        await groups_collection.update_one(
             {"_id": self.group_object_id},
             {"$set": {
                 "last_message": {
@@ -305,6 +294,10 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             "temp_id": temp_id,
             "message_type": "group",
             "is_encrypted": is_encrypted,
+            "is_image": is_image,
+            "image_size": image_size,
+            "media_id": media_id,
+            "read_by_me": True,
             "encryption_enabled": group_encryption_enabled
         }
 
@@ -344,11 +337,15 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             if iv:
                 update_data["iv"] = iv
             
-            result = group_messages_collection.update_one(
+            # Limit edit to 5 minutes
+            five_minutes_ago = now() - timedelta(minutes=5)
+
+            result = await group_messages_collection.update_one(
                 {
                     "_id": ObjectId(message_id), 
                     "sender_id": self.user_object_id,  # ObjectId
-                    "group_id": self.group_object_id   # ObjectId
+                    "group_id": self.group_object_id,   # ObjectId
+                    "timestamp": {"$gte": five_minutes_ago}
                 },
                 {"$set": update_data}
             )
@@ -394,7 +391,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             if isinstance(message_id, str) and message_id.startswith('temp_'):
                 return
                 
-            result = group_messages_collection.update_one(
+            result = await group_messages_collection.update_one(
                 {
                     "_id": ObjectId(message_id), 
                     "sender_id": self.user_object_id,  # ObjectId
@@ -477,6 +474,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         if object_ids:
             # Use bulk write for better performance
             bulk_operations = []
+            from pymongo import UpdateOne
             for msg_id in object_ids:
                 bulk_operations.append(
                     UpdateOne(
@@ -486,7 +484,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
                 )
             
             if bulk_operations:
-                group_messages_collection.bulk_write(bulk_operations)
+                await group_messages_collection.bulk_write(bulk_operations)
 
         await self.channel_layer.group_send(self.room_group_name, {
             "type": "group_read_receipt",
@@ -575,7 +573,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             group_object_id = ObjectId(group_id)
 
             # Verify admin
-            group = groups_collection.find_one({
+            group = await groups_collection.find_one({
                 "_id": group_object_id,  # Use ObjectId for DB
                 "admin_ids": self.user_object_id
             })
@@ -591,14 +589,14 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             print(f"✅ User IS admin, clearing group chat...")
 
             # Delete all messages - use ObjectId for DB
-            result = group_messages_collection.delete_many({
+            result = await group_messages_collection.delete_many({
                 "group_id": group_object_id  # ObjectId for DB
             })
             deleted_count = result.deleted_count
             print(f"✅ Cleared {deleted_count} messages from group {group_id}")
 
             # Update last message - use ObjectId for DB
-            groups_collection.update_one(
+            await groups_collection.update_one(
                 {"_id": group_object_id},  # ObjectId for DB
                 {"$set": {
                     "last_message": None,
@@ -655,7 +653,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             print(f"🔐 GROUP SEED REQUEST - Group: {group_id}, Requester: {requester_id}")
             
             # Get group info using ObjectId
-            group = groups_collection.find_one({"_id": ObjectId(group_id)})
+            group = await groups_collection.find_one({"_id": ObjectId(group_id)})
             if not group:
                 return
 
@@ -666,19 +664,18 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
 
             # Find online admins with encryption
             online_admins = []
-            for admin_id in admin_ids:
-                admin = users_collection.find_one({"_id": ObjectId(admin_id)})
-                if admin and admin.get('status') == 'online' and 'encryption_keys' in admin:
+            async for admin_doc in users_collection.find({"_id": {"$in": admin_ids}}):
+                if admin_doc and admin_doc.get('status') == 'online' and 'encryption_keys' in admin_doc:
                     online_admins.append({
-                        'admin_id': str(admin_id),  # Convert to string for WebSocket
-                        'admin_name': admin.get('full_name', 'Admin'),
-                        'public_key': admin['encryption_keys'].get('public_key')
+                        'admin_id': str(admin_doc['_id']),  # Convert to string for WebSocket
+                        'admin_name': admin_doc.get('full_name', 'Admin'),
+                        'public_key': admin_doc['encryption_keys'].get('public_key')
                     })
 
             if online_admins:
                 # Notify admins about the seed request
                 for admin in online_admins:
-                    await self.channel_layer.send(
+                    await self.channel_layer.group_send(
                         f"user_{admin['admin_id']}",  # Send to admin's personal channel
                         {
                             "type": "group_seed_request",
@@ -731,7 +728,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             print(f"🔐 SHARE GROUP SEED - Group: {group_id}, Member: {member_id}, Admin: {self.user_id}")
             
             # Verify admin permissions using ObjectIds (double check)
-            group = groups_collection.find_one({
+            group = await groups_collection.find_one({
                 "_id": ObjectId(group_id),
                 "admin_ids": self.user_object_id  # ObjectId comparison
             })
@@ -739,9 +736,9 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             if not group:
                 print(f"❌ User {self.user_id} is not admin of group {group_id}")
                 return
-
+            
             # Verify target member is in group using ObjectIds
-            member_in_group = groups_collection.find_one({
+            member_in_group = await groups_collection.find_one({
                 "_id": ObjectId(group_id),
                 "members": ObjectId(member_id)  # ObjectId comparison
             })
@@ -751,7 +748,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
                 return
 
             # Send encrypted seed to the member
-            await self.channel_layer.send(
+            await self.channel_layer.group_send(
                 f"user_{member_id}",  # Send to member's personal channel
                 {
                     "type": "group_seed_shared",
@@ -902,6 +899,29 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         """Handle unknown message types gracefully without disconnecting"""
         print(f"⚠️ Unhandled message type: {event.get('type')}")
         # Don't disconnect, just log and ignore
+
+    async def group_member_left(self, event):
+        """Broadcast when a member voluntarily leaves the group"""
+        await self.send(text_data=json.dumps(event))
+
+    async def group_admin_transferred(self, event):
+        """Broadcast when admin rights are transferred (e.g. last admin left)"""
+        await self.send(text_data=json.dumps(event))
+
+    async def group_deleted(self, event):
+        """Broadcast to all group members that the group was deleted"""
+        await self.send(text_data=json.dumps(event))
+
+    async def group_deleted_notification(self, event):
+        """Personal notification for individual members that the group was deleted"""
+        await self.send(text_data=json.dumps(event))
+
+    async def group_user_removed(self, event):
+        """Personal notification for a user who was removed from the group"""
+        # Only forward to the targeted user
+        target_user_id = event.get('user_id', '')
+        if target_user_id == self.user_id:
+            await self.send(text_data=json.dumps(event))
     # new
     async def group_admins_removed(self, event):
         """Handle bulk admin removal notifications"""
